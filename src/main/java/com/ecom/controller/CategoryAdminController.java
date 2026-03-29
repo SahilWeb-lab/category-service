@@ -34,7 +34,6 @@ public class CategoryAdminController implements CategoryAdminEndpoints {
 	 private final CategoryService categoryService;
 	
 	 // Create Category
-    @PostMapping
     public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
            @Valid @RequestBody CategoryRequest request) {
     	log.info("Category creation started!!");
@@ -44,7 +43,6 @@ public class CategoryAdminController implements CategoryAdminEndpoints {
     }
     
     // Update Category
-    @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
             @PathVariable Long id,
             @RequestBody CategoryRequest request) {
@@ -52,39 +50,52 @@ public class CategoryAdminController implements CategoryAdminEndpoints {
         return ApiResponseUtil.success(categoryResponse, "Category updated successfully!", HttpStatus.OK);
     }
     
+    // Get Category By Id
+    public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryById(
+            @PathVariable Long id) {
+        CategoryResponse categoryResponse = categoryService.getCategoryByIdForAdmin(id);
+        return ApiResponseUtil.success(categoryResponse, "Category fetched successfully!", HttpStatus.OK);
+    }
+    
     // Get All Categories (Pagination + Sorting)
-    @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CategoryResponse>>> getAllCategories(
             @RequestParam(defaultValue = "0") Integer pageNo,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
+            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(defaultValue = "all") String status) {
 
-       Page<CategoryResponse> page = categoryService.getAllCategories(pageNo, pageSize, sortBy, sortDir);
+       Page<CategoryResponse> page = categoryService.getAllCategoriesForAdmin(pageNo, pageSize, sortBy, sortDir, status);
        PageResponse<CategoryResponse> pageResponse = PageResponseMapper.fromPage(page, sortBy, sortDir);
        long totalCategoriesFound = page.getTotalElements();
        return ApiResponseUtil.success(pageResponse, totalCategoriesFound + " categories found!", HttpStatus.OK);
     }
 
     // Soft Delete Category
-    @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ApiResponseUtil.success(null, "Category deleted successfully!", HttpStatus.OK);
     }
 
     // Activate Category
-    @PatchMapping("/{id}/activate")
     public ResponseEntity<ApiResponse<Void>> activateCategory(@PathVariable Long id) {
     	categoryService.activateCategory(id);
     	return ApiResponseUtil.success(null, "Category activated successfully!", HttpStatus.OK);
     }
 
     // Deactivate Category
-    @PatchMapping("/{id}/deactivate")
     public ResponseEntity<ApiResponse<Void>> deactivateCategory(@PathVariable Long id) {
     	categoryService.deactivateCategory(id);
     	return ApiResponseUtil.success(null, "Category deactivated successfully!", HttpStatus.OK);
     }
+
+	@Override
+	public ResponseEntity<ApiResponse<PageResponse<CategoryResponse>>> getCategoriesByParentId(Long parentId,
+			Integer pageNo, Integer pageSize, String sortBy, String sortDir) {
+		 Page<CategoryResponse> categoriesByParentId = categoryService.getCategoriesByParentIdForAdmin(parentId, pageNo, pageSize, sortBy, sortDir);
+	       PageResponse<CategoryResponse> pageResponse = PageResponseMapper.fromPage(categoriesByParentId, sortBy, sortDir);
+	       long totalCategoriesFound = categoriesByParentId.getTotalElements();
+	       return ApiResponseUtil.success(pageResponse, totalCategoriesFound + " categories found!", HttpStatus.OK);
+	}
 	
 }

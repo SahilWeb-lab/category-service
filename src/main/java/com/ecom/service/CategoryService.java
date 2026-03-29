@@ -1,9 +1,6 @@
 package com.ecom.service;
 
-import java.util.List;
-
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import com.ecom.dto.CategoryRequest;
 import com.ecom.dto.CategoryResponse;
@@ -12,20 +9,31 @@ public interface CategoryService {
 
 	CategoryResponse createCategory(CategoryRequest request);
 
-    CategoryResponse updateCategory(Long id, CategoryRequest request);
+	CategoryResponse updateCategory(Long id, CategoryRequest request);
 
-    CategoryResponse getCategoryById(Long id);
+	CategoryResponse getCategoryByIdForUser(Long id);
 
-    public Page<CategoryResponse> getAllCategories(Integer pageNo, Integer pageSize, String sortBy, String sortDir);
+	CategoryResponse getCategoryByIdForAdmin(Long id);
 
-    void deleteCategory(Long id); // soft delete
+	public Page<CategoryResponse> getAllCategoriesForAdmin(Integer pageNo, Integer pageSize, String sortBy,
+			String sortDir, String status);
 
-    void activateCategory(Long id);
+	public Page<CategoryResponse> getAllCategoriesForUser(Integer pageNo, Integer pageSize, String sortBy,
+			String sortDir);
 
-    void deactivateCategory(Long id);
+	void deleteCategory(Long id); // soft delete
 
-    public Page<CategoryResponse> getCategoriesByParentId(Long parentId, Integer pageNo, Integer pageSize, String sortBy, String sortDir);
+	void activateCategory(Long id);
 
-    public Page<CategoryResponse> searchCategories(String keyword, Integer pageNo, Integer pageSize, String sortBy, String sortDir);
-	
+	void deactivateCategory(Long id);
+
+	public Page<CategoryResponse> getCategoriesByParentIdForAdmin(Long parentId, Integer pageNo, Integer pageSize,
+			String sortBy, String sortDir);
+
+	public Page<CategoryResponse> getCategoriesByParentIdForUser(Long parentId, Integer pageNo, Integer pageSize,
+			String sortBy, String sortDir);
+
+	public Page<CategoryResponse> searchCategories(String keyword, Integer pageNo, Integer pageSize, String sortBy,
+			String sortDir, Boolean status);
+
 }

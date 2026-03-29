@@ -49,7 +49,10 @@ public interface CategoryAdminEndpoints {
             @RequestParam(defaultValue = "id") String sortBy,
 
             @Parameter(description = "Sort direction: asc or desc")
-            @RequestParam(defaultValue = "asc") String sortDir
+            @RequestParam(defaultValue = "asc") String sortDir,
+            
+            @Parameter(description = "Status : all, active, inactive")
+            @RequestParam(defaultValue = "all") String status
     );
 
     @DeleteMapping("/{id}")
@@ -71,6 +74,34 @@ public interface CategoryAdminEndpoints {
     @PatchMapping("/{id}/deactivate")
     @Operation(summary = "Deactivate category", description = "Mark category as inactive")
     ResponseEntity<ApiResponse<Void>> deactivateCategory(
+
+            @Parameter(description = "Category ID")
+            @PathVariable Long id
+    );
+    
+    @GetMapping("/parent/{parentId}")
+    @Operation(summary = "Get categories by parent ID", description = "Fetch categories by parent category")
+    ResponseEntity<ApiResponse<PageResponse<CategoryResponse>>> getCategoriesByParentId(
+
+            @Parameter(description = "Parent category ID")
+            @PathVariable Long parentId,
+
+            @Parameter(description = "Page number")
+            @RequestParam(defaultValue = "0") Integer pageNo,
+
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "10") Integer pageSize,
+
+            @Parameter(description = "Sort by field")
+            @RequestParam(defaultValue = "id") String sortBy,
+
+            @Parameter(description = "Sort direction")
+            @RequestParam(defaultValue = "asc") String sortDir
+    );
+    
+    @GetMapping("/{id}")
+    @Operation(summary = "Get category by ID", description = "Fetch category details by ID")
+    ResponseEntity<ApiResponse<CategoryResponse>> getCategoryById(
 
             @Parameter(description = "Category ID")
             @PathVariable Long id

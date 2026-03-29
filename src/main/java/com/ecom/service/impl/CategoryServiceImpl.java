@@ -18,6 +18,7 @@ import com.ecom.mapper.CategoryMapper;
 import com.ecom.model.Category;
 import com.ecom.repository.CategoryRepository;
 import com.ecom.service.CategoryService;
+import com.ecom.util.PageableUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,14 +28,14 @@ public class CategoryServiceImpl implements CategoryService {
 
 	private final CategoryRepository categoryRepository;
 	private final CategoryMapper categoryMapper;
-	
+
 	@Override
 	@Transactional
 	public CategoryResponse createCategory(CategoryRequest request) {
-		
-		if(request.getParentId() != null) 
+
+		if (request.getParentId() != null)
 			categoryExistsById(request.getParentId());
-		
+
 		Category category = categoryMapper.toEntity(request);
 		categoryRepository.save(category);
 		return categoryMapper.toDTO(category);
@@ -43,39 +44,60 @@ public class CategoryServiceImpl implements CategoryService {
 	@Override
 	@Transactional
 	public CategoryResponse updateCategory(Long id, CategoryRequest request) {
-		
-		if(request.getParentId() != null) 
+
+		if (request.getParentId() != null)
 			categoryExistsById(request.getParentId());
-		
+
 		Category existingCategory = categoryExistsById(id);
 		existingCategory.setDescription(request.getDescription());
 		existingCategory.setName(request.getName());
 		existingCategory.setParentId(request.getParentId());
 		existingCategory.setStatus(request.getStatus());
 		existingCategory.setUpdatedAt(LocalDateTime.now());
-		
+
 		Category updatedCategory = categoryRepository.save(existingCategory);
-		
+
 		return categoryMapper.toDTO(updatedCategory);
 	}
 
 	@Override
-	public CategoryResponse getCategoryById(Long id) {
+	public CategoryResponse getCategoryByIdForUser(Long id) {
+		Category category = categoryRepository.findByIdAndStatusTrue(id)
+				.orElseThrow(() -> new CategoryNotFoundException("Category not found with id : [" + id + "]"));
+		return categoryMapper.toDTO(category);
+	}
+
+	@Override
+	public CategoryResponse getCategoryByIdForAdmin(Long id) {
 		Category category = categoryExistsById(id);
 		return categoryMapper.toDTO(category);
 	}
 
 	@Override
-	public Page<CategoryResponse> getAllCategories(Integer pageNo, Integer pageSize, String sortBy, String sortDir) {
-		
-//		Sort:
-//		Sort Direction:
-		Direction sortDirection = sortDir.equalsIgnoreCase("asc") ? Direction.ASC : Direction.DESC;
-		Sort sort = Sort.by(sortDirection, sortBy);
-		
-		Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
-		
-		Page<Category> categoryPage = categoryRepository.findAll(pageable);
+	public Page<CategoryResponse> getAllCategoriesForUser(Integer pageNo, Integer pageSize, String sortBy,
+			String sortDir) {
+
+		Pageable pageable = PageableUtil.createPageable(pageNo, pageSize, sortBy, sortDir);
+
+		Page<Category> categoryPage = categoryRepository.findByStatusTrue(pageable);
+		return categoryPage.map(categoryMapper::toDTO);
+	}
+
+	@Override
+	public Page<CategoryResponse> getAllCategoriesForAdmin(Integer pageNo, Integer pageSize, String sortBy,
+			String sortDir, String status) {
+
+		Pageable pageable = PageableUtil.createPageable(pageNo, pageSize, sortBy, sortDir);
+
+		Page<Category> categoryPage = null;
+
+		if (status.equals("active"))
+			categoryPage = categoryRepository.findByStatusTrue(pageable);
+		else if (status.equals("inactive"))
+			categoryPage = categoryRepository.findByStatusFalse(pageable);
+		else
+			categoryPage = categoryRepository.findAll(pageable);
+
 		return categoryPage.map(categoryMapper::toDTO);
 	}
 
@@ -90,9 +112,9 @@ public class CategoryServiceImpl implements CategoryService {
 	@Transactional
 	public void activateCategory(Long id) {
 		Category existingCategory = categoryExistsById(id);
-		if(existingCategory.getStatus())
+		if (existingCategory.getStatus())
 			throw new ResourceStateException("Category already activated!");
-		
+
 		existingCategory.setStatus(true);
 		categoryRepository.save(existingCategory);
 	}
@@ -101,39 +123,41 @@ public class CategoryServiceImpl implements CategoryService {
 	@Transactional
 	public void deactivateCategory(Long id) {
 		Category existingCategory = categoryExistsById(id);
-		if(!existingCategory.getStatus())
+		if (!existingCategory.getStatus())
 			throw new ResourceStateException("Category already deactivated!");
-		
+
 		existingCategory.setStatus(false);
 		categoryRepository.save(existingCategory);
 	}
 
 	@Override
-	public Page<CategoryResponse> getCategoriesByParentId(Long parentId, Integer pageNo, Integer pageSize, String sortBy, String sortDir) {
-//		Sort:
-//		Sort Direction:
-		Direction sortDirection = sortDir.equalsIgnoreCase("asc") ? Direction.ASC : Direction.DESC;
-		Sort sort = Sort.by(sortDirection, sortBy);
-		
-		Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
+	public Page<CategoryResponse> getCategoriesByParentIdForAdmin(Long parentId, Integer pageNo, Integer pageSize,
+			String sortBy, String sortDir) {
+
+		Pageable pageable = PageableUtil.createPageable(pageNo, pageSize, sortBy, sortDir);
 		Page<Category> categoryPage = categoryRepository.findByParentId(parentId, pageable);
 		return categoryPage.map(categoryMapper::toDTO);
 	}
 
 	@Override
-	public Page<CategoryResponse> searchCategories(String keyword, Integer pageNo, Integer pageSize, String sortBy, String sortDir) {
-//		Sort:
-//		Sort Direction:
-		Direction sortDirection = sortDir.equalsIgnoreCase("asc") ? Direction.ASC : Direction.DESC;
-		Sort sort = Sort.by(sortDirection, sortBy);
-		
-		Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
-		Page<Category> categoryPage = categoryRepository.searchCategories(keyword, pageable);
+	public Page<CategoryResponse> getCategoriesByParentIdForUser(Long parentId, Integer pageNo, Integer pageSize,
+			String sortBy, String sortDir) {
+		Pageable pageable = PageableUtil.createPageable(pageNo, pageSize, sortBy, sortDir);
+		Page<Category> categoryPage = categoryRepository.findByParentIdAndStatusTrue(parentId, pageable);
 		return categoryPage.map(categoryMapper::toDTO);
 	}
-	
+
+	@Override
+	public Page<CategoryResponse> searchCategories(String keyword, Integer pageNo, Integer pageSize, String sortBy,
+			String sortDir, Boolean status) {
+		Pageable pageable = PageableUtil.createPageable(pageNo, pageSize, sortBy, sortDir);
+		Page<Category> categoryPage = categoryRepository.searchCategories(keyword, status, pageable);
+		return categoryPage.map(categoryMapper::toDTO);
+	}
+
 	private Category categoryExistsById(Long id) {
-		return categoryRepository.findById(id).orElseThrow(() -> new CategoryNotFoundException("Category not found with id : ["+ id +"]"));
+		return categoryRepository.findById(id)
+				.orElseThrow(() -> new CategoryNotFoundException("Category not found with id : [" + id + "]"));
 	}
 
 }

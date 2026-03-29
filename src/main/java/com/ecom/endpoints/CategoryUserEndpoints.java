@@ -40,7 +40,10 @@ public interface CategoryUserEndpoints {
             @RequestParam(defaultValue = "id") String sortBy,
 
             @Parameter(description = "Sort direction: asc or desc")
-            @RequestParam(defaultValue = "asc") String sortDir
+            @RequestParam(defaultValue = "asc") String sortDir,
+            
+            @Parameter(description = "Status : null -> all, true -> active, false -> inactive")
+            @RequestParam(required = false) Boolean status
     );
 
     @GetMapping("/parent/{parentId}")
@@ -62,4 +65,22 @@ public interface CategoryUserEndpoints {
             @Parameter(description = "Sort direction")
             @RequestParam(defaultValue = "asc") String sortDir
     );
+
+    @GetMapping
+    @Operation(summary = "Get all categories", description = "Fetch paginated categories with sorting")
+    ResponseEntity<ApiResponse<PageResponse<CategoryResponse>>> getAllCategories(
+
+            @Parameter(description = "Page number (0-based)")
+            @RequestParam(defaultValue = "0") Integer pageNo,
+
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "10") Integer pageSize,
+
+            @Parameter(description = "Sort by field")
+            @RequestParam(defaultValue = "id") String sortBy,
+
+            @Parameter(description = "Sort direction: asc or desc")
+            @RequestParam(defaultValue = "asc") String sortDir
+    );
+    
 }
